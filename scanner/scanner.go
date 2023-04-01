@@ -24,11 +24,18 @@ type Scanner struct {
 	DefaultBinary string // default value for BinPath - defaults to `Name`
 }
 
+func (s *Scanner) GetDefaultBinaryPath() string {
+	if s.DefaultBinary != "" {
+		return s.DefaultBinary
+	}
+	return s.Name
+}
+
 // BuildOptions parses the command line flags provided by a user
 func (s *Scanner) BuildOptions() *Options {
 	options := &Options{}
 	flag.StringVarP(&options.Output, "output", "o", "/output", "Scanner results directory")
-	flag.StringVarP(&options.BinPath, "bin", "b", s.DefaultBinary, "Path to scanner binary")
+	flag.StringVarP(&options.BinPath, "bin", "b", s.GetDefaultBinaryPath(), "Path to scanner binary")
 	flag.BoolVarP(&options.ExtraHelp, "scanner-help", "H", false, "Show help for the scanner extra flags")
 	return options
 }
