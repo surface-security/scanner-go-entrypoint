@@ -1,7 +1,10 @@
 package scanner
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -38,6 +41,43 @@ func (s *Scanner) BuildOptions() *Options {
 	flag.StringVarP(&options.BinPath, "bin", "b", s.GetDefaultBinaryPath(), "Path to scanner binary")
 	flag.BoolVarP(&options.ExtraHelp, "scanner-help", "H", false, "Show help for the scanner extra flags")
 	return options
+}
+
+func ReadInputLines(options *Options, callback func(string) bool) {
+	readFile, err := os.Open(options.Input)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	defer readFile.Close()
+
+	fileScanner := bufio.NewScanner(readFile)
+	fileScanner.Split(bufio.ScanLines)
+	for fileScanner.Scan() {
+		if !callback(fileScanner.Text()) {
+			break
+		}
+	}
+}
+
+func ReadInputJSONLines[T interface{}](options *Options, callback func(T) bool) {
+	jsonFile, err := os.Open(options.Input)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	dec := json.NewDecoder(jsonFile)
+	for {
+		var input T
+		err := dec.Decode(&input)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		if !callback(input) {
+			break
+		}
+	}
 }
 
 // ParseOptions parses the command line flags provided by a user
