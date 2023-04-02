@@ -1,4 +1,4 @@
-module github.com/fopina/scanner-go-entrypoint
+module github.com/surface-security/scanner-go-entrypoint
 
 go 1.20
 
