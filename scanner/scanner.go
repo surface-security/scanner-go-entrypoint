@@ -23,8 +23,9 @@ type Options struct {
 
 // Scanner holds scanner configuration
 type Scanner struct {
-	Name          string // name of the scanner
-	DefaultBinary string // default value for BinPath - defaults to `Name`
+	Name          string   // name of the scanner
+	DefaultBinary string   // default value for BinPath - defaults to `Name`
+	Options       *Options // holds the CLI options
 }
 
 func (s *Scanner) GetDefaultBinaryPath() string {
@@ -36,11 +37,23 @@ func (s *Scanner) GetDefaultBinaryPath() string {
 
 // BuildOptions parses the command line flags provided by a user
 func (s *Scanner) BuildOptions() *Options {
-	options := &Options{}
-	flag.StringVarP(&options.Output, "output", "o", "/output", "Scanner results directory")
-	flag.StringVarP(&options.BinPath, "bin", "b", s.GetDefaultBinaryPath(), "Path to scanner binary")
-	flag.BoolVarP(&options.ExtraHelp, "scanner-help", "H", false, "Show help for the scanner extra flags")
-	return options
+	s.Options = &Options{}
+	flag.StringVarP(&s.Options.Output, "output", "o", "/output", "Scanner results directory")
+	flag.StringVarP(&s.Options.BinPath, "bin", "b", s.GetDefaultBinaryPath(), "Path to scanner binary")
+	flag.BoolVarP(&s.Options.ExtraHelp, "scanner-help", "H", false, "Show help for the scanner extra flags")
+	return s.Options
+}
+
+// Exec executes scanner binary with given args plus all extra flags
+func (s *Scanner) Exec(args ...string) error {
+	flags := append(
+		args,
+		s.Options.ExtraFlags...,
+	)
+	cmd := exec.Command(s.Options.BinPath, flags...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func ReadInputLines(options *Options, callback func(string) bool) {
