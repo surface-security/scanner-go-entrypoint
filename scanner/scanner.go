@@ -56,6 +56,34 @@ func (s *Scanner) Exec(args ...string) error {
 	return cmd.Run()
 }
 
+// ExecCaptureOutput executes scanner binary with given args plus all extra flags and passes stdout line by line to callback
+func (s *Scanner) ExecCaptureOutput(callback func(string), args ...string) error {
+	flags := append(
+		args,
+		s.Options.ExtraFlags...,
+	)
+	cmd := exec.Command(s.Options.BinPath, flags...)
+	r, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	cmd.Stderr = os.Stderr
+
+	done := make(chan struct{})
+	scanner := bufio.NewScanner(r)
+	go func() {
+		for scanner.Scan() {
+			line := scanner.Text()
+			callback(line)
+		}
+		done <- struct{}{}
+	}()
+	err = cmd.Run()
+	// Wait for all output to be processed
+	<-done
+	return err
+}
+
 func ReadInputLines(options *Options, callback func(string) bool) {
 	readFile, err := os.Open(options.Input)
 	if err != nil {
